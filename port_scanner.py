@@ -12,7 +12,11 @@ def scan(port):
     s.settimeout(0.5)
 
     if s.connect_ex((target, port)) == 0:
-        print(f"Port {port} is OPEN")
+        try:
+            service = socket.getservbyport(port)
+        except:
+            service = "Unknown"
+        print(f"Port {port} is OPEN ({service})")
 
     s.close()
 
