@@ -1,27 +1,44 @@
+from flask import Flask, render_template, request
 import socket
 import threading
 
-target = input("Enter target IP address: ")
-start = int(input("Start port: "))
-end = int(input("End port: "))
+app = Flask(__name__)
 
-print(f"\nScanning {target} from port {start} to {end}...\n")
+@app.route("/", methods=["GET", "POST"])
+def home():
+    result = ""
+    if request.method == "POST":
+        target = request.form["target"]
+        start = int(request.form["start"])
+        end = int(request.form["end"])
+        open_ports = []
 
-def scan(port):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(0.5)
+        def scan(port):
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(0.5)
+            if s.connect_ex((target, port)) == 0:
+                try:
+                    service = socket.getservbyport(port)
+                except:
+                    service = "Unknown"
+                open_ports.append(f"Port {port} OPEN ({service})")
+            s.close()
 
-    if s.connect_ex((target, port)) == 0:
-        try:
-            service = socket.getservbyport(port)
-        except:
-            service = "Unknown"
-        print(f"Port {port} is OPEN ({service})")
+        threads = []
+        for port in range(start, end + 1):
+            t = threading.Thread(target=scan, args=(port,))
+            threads.append(t)
+            t.start()
 
-    s.close()
+        for t in threads:
+            t.join()
 
-for port in range(start, end + 1):
-    thread = threading.Thread(target=scan, args=(port,))
-    thread.start()
+        if open_ports:
+            result = "\n".join(open_ports)
+        else:
+            result = "No open ports found."
 
-print("Scan started...\n")
+    return render_template("index.html", result=result)
+
+if __name__ == "__main__":
+    app.run(debug=True)
