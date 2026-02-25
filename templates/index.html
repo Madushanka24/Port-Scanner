@@ -13,15 +13,30 @@
 <body>
     <h1>Python Web Port Scanner</h1>
     <form method="POST" onsubmit="showLoader()">
-        <label>Target IP:</label><br>
-        <input type="text" name="target" required><br>
-        <label>Start Port:</label><br>
-        <input type="number" name="start" required><br>
-        <label>End Port:</label><br>
-        <input type="number" name="end" required><br>
-        <button type="submit">Scan</button>
-    </form>
+    <label>Target IP:</label><br>
+    <input type="text" name="target" required><br>
 
+    <label>Start Port:</label><br>
+    <input type="number" name="start" required><br>
+
+    <label>End Port:</label><br>
+    <input type="number" name="end" required><br>
+
+    <label>Scan Type:</label><br>
+    <select name="scan_type" required>
+        <option value="TCP">TCP</option>
+        <option value="UDP">UDP</option>
+    </select><br>
+
+    <label>Export Results:</label><br>
+    <select name="export_type">
+        <option value="None">None</option>
+        <option value="TXT">TXT</option>
+        <option value="CSV">CSV</option>
+    </select><br>
+
+    <button type="submit">Scan</button>
+    </form>
     <div id="loader" class="loader" style="display:none;"></div>
 
     {% if result %}
