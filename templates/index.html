@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Port Scanner</title>
+    <title>Advanced Port Scanner</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script>
         function showLoader() {
@@ -11,37 +12,63 @@
     </script>
 </head>
 <body>
-    <h1>Python Web Port Scanner</h1>
-    <form method="POST" onsubmit="showLoader()">
-    <label>Target IP(s) (comma separated):</label><br>
-    <input type="text" name="targets" placeholder="127.0.0.1,192.168.1.10" required><br>
+    <div class="container">
+        <h1>Advanced Web Port Scanner</h1>
 
-    <label>Start Port:</label><br>
-    <input type="number" name="start" required><br>
+        <form method="POST" onsubmit="showLoader()">
+            <label>Target IP(s) (comma separated):</label>
+            <input class="form-control" type="text" name="targets" placeholder="127.0.0.1,192.168.1.10" required>
 
-    <label>End Port:</label><br>
-    <input type="number" name="end" required><br>
+            <label>Start Port:</label>
+            <input class="form-control" type="number" name="start" required>
 
-    <label>Scan Type:</label><br>
-    <select name="scan_type" required>
-        <option value="TCP">TCP</option>
-        <option value="UDP">UDP</option>
-    </select><br>
+            <label>End Port:</label>
+            <input class="form-control" type="number" name="end" required>
 
-    <label>Export Results:</label><br>
-    <select name="export_type">
-        <option value="None">None</option>
-        <option value="TXT">TXT</option>
-        <option value="CSV">CSV</option>
-    </select><br>
+            <label>Scan Type:</label>
+            <select class="form-select" name="scan_type" required>
+                <option value="TCP">TCP</option>
+                <option value="UDP">UDP</option>
+            </select>
 
-    <button type="submit">Scan</button>
-    </form>
-    <div id="loader" class="loader" style="display:none;"></div>
+            <label>Export Results:</label>
+            <select class="form-select" name="export_type">
+                <option value="None">None</option>
+                <option value="TXT">TXT</option>
+                <option value="CSV">CSV</option>
+            </select>
 
-    {% if result %}
-        <h2>Scan Results:</h2>
-        <pre>{{ result }}</pre>
-    {% endif %}
+            <button type="submit" class="btn btn-primary mt-3">Scan</button>
+        </form>
+
+        <div id="loader" class="loader"></div>
+
+        {% if result %}
+            <h2 class="text-center mt-4">Scan Results</h2>
+            <table class="table table-results">
+                <thead>
+                    <tr>
+                        <th>Target</th>
+                        <th>Port</th>
+                        <th>Protocol</th>
+                        <th>Service</th>
+                        <th>Banner</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in result.split('\n') %}
+                        {% set parts = line.split(',') %}
+                        <tr class="{% if 'OPEN' in line %}open{% else %}closed{% endif %}">
+                            <td>{{ parts[0] }}</td>
+                            <td>{{ parts[1] }}</td>
+                            <td>{{ parts[2] }}</td>
+                            <td>{{ parts[3] }}</td>
+                            <td>{{ parts[4] }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
 </body>
 </html>
