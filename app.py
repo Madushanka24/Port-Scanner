@@ -8,83 +8,90 @@ app = Flask(__name__)
 RESULTS_DIR = "results"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
+# Common ports to protocol mapping for better detection
+PROTOCOLS = {
+    21: "FTP",
+    22: "SSH",
+    23: "Telnet",
+    25: "SMTP",
+    53: "DNS",
+    80: "HTTP",
+    110: "POP3",
+    143: "IMAP",
+    443: "HTTPS",
+    3389: "RDP",
+}
+
 @app.route("/", methods=["GET", "POST"])
 def home():
     result = ""
     if request.method == "POST":
-        target = request.form["target"]
+        targets_input = request.form["targets"]
         start = int(request.form["start"])
         end = int(request.form["end"])
         scan_type = request.form["scan_type"]
         export_type = request.form["export_type"]
 
-        open_ports = []
+        targets = [t.strip() for t in targets_input.split(",")]
+        all_results = []
 
-        def scan_tcp(port):
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(1)
+        def scan_port(target, port):
+            s = None
             try:
-                if s.connect_ex((target, port)) == 0:
+                if scan_type == "TCP":
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.settimeout(1)
+                    if s.connect_ex((target, port)) == 0:
+                        service = PROTOCOLS.get(port, "Unknown")
+                        try:
+                            s.send(b"\n")
+                            banner = s.recv(1024).decode().strip()
+                        except:
+                            banner = "No banner"
+                        all_results.append(f"{target},{port},TCP,{service},{banner}")
+                elif scan_type == "UDP":
+                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    s.settimeout(1)
+                    s.sendto(b"\n", (target, port))
                     try:
-                        service = socket.getservbyport(port)
-                    except:
-                        service = "Unknown"
-                    try:
-                        s.send(b"\n")
-                        banner = s.recv(1024).decode().strip()
+                        data, _ = s.recvfrom(1024)
+                        banner = data.decode().strip()
                     except:
                         banner = "No banner"
-                    open_ports.append(f"{port},TCP,{service},{banner}")
+                    service = PROTOCOLS.get(port, "Unknown")
+                    all_results.append(f"{target},{port},UDP,{service},{banner}")
             except:
                 pass
             finally:
-                s.close()
-
-        def scan_udp(port):
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.settimeout(1)
-            try:
-                s.sendto(b"\n", (target, port))
-                data, _ = s.recvfrom(1024)
-                service = "Unknown"
-                banner = data.decode().strip()
-                open_ports.append(f"{port},UDP,{service},{banner}")
-            except socket.timeout:
-                # UDP often doesn't respond
-                pass
-            except:
-                pass
-            finally:
-                s.close()
+                if s:
+                    s.close()
 
         threads = []
-        for port in range(start, end + 1):
-            if scan_type == "TCP":
-                t = threading.Thread(target=scan_tcp, args=(port,))
-            else:
-                t = threading.Thread(target=scan_udp, args=(port,))
-            threads.append(t)
-            t.start()
+        for target in targets:
+            for port in range(start, end + 1):
+                t = threading.Thread(target=scan_port, args=(target, port))
+                threads.append(t)
+                t.start()
 
         for t in threads:
             t.join()
 
-        if open_ports:
-            result = "\n".join(open_ports)
+        if all_results:
+            result = "\n".join(all_results)
         else:
             result = "No open ports found."
 
-        # Export results
-        if export_type != "None" and open_ports:
-            filename = f"{RESULTS_DIR}/scan_{target}_{scan_type}.{export_type.lower()}"
+        # Export
+        if export_type != "None" and all_results:
+            filename = f"{RESULTS_DIR}/scan_results.{export_type.lower()}"
             if export_type == "TXT":
                 with open(filename, "w") as f:
-                    f.write("\n".join(open_ports))
+                    f.write("\n".join(all_results))
             elif export_type == "CSV":
                 with open(filename, "w", newline="") as f:
                     writer = csv.writer(f)
-                    writer.writerow(["Port","Protocol","Service","Banner"])
-                    for line in open_ports:
+                    writer.writerow(["Target","Port","Protocol","Service","Banner"])
+                    for line in all_results:
                         writer.writerow(line.split(","))
             result += f"\n\nResults exported to {filename}"
 
