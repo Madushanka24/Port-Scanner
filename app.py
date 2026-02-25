@@ -15,14 +15,23 @@ def home():
 
         def scan(port):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(0.5)
-            if s.connect_ex((target, port)) == 0:
-                try:
-                    service = socket.getservbyport(port)
-                except:
-                    service = "Unknown"
-                open_ports.append(f"Port {port} OPEN ({service})")
-            s.close()
+            s.settimeout(1)
+            try:
+                if s.connect_ex((target, port)) == 0:
+                    try:
+                        service = socket.getservbyport(port)
+                    except:
+                        service = "Unknown"
+                    try:
+                        s.send(b"\n")  # trigger banner for some services
+                        banner = s.recv(1024).decode().strip()
+                    except:
+                        banner = "No banner"
+                    open_ports.append(f"Port {port} OPEN ({service}) | Banner: {banner}")
+            except:
+                pass
+            finally:
+                s.close()
 
         threads = []
         for port in range(start, end + 1):
