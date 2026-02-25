@@ -77,9 +77,9 @@ def home():
             t.join()
 
         if all_results:
-            result = "\n".join(all_results)
+            result = all_results 
         else:
-            result = "No open ports found."
+            result = ["No open ports found."]
 
         # Export
         if export_type != "None" and all_results:
