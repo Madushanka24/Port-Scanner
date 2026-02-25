@@ -56,15 +56,15 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for line in result.split('\n') %}
-                        {% set parts = line.split(',') %}
-                        <tr class="{% if 'OPEN' in line %}open{% else %}closed{% endif %}">
-                            <td>{{ parts[0] }}</td>
-                            <td>{{ parts[1] }}</td>
-                            <td>{{ parts[2] }}</td>
-                            <td>{{ parts[3] }}</td>
-                            <td>{{ parts[4] }}</td>
-                        </tr>
+                    {% for line in result %}
+                    {% set parts = line.split(',') %}
+                    <tr class="{% if 'OPEN' in line %}open{% else %}closed{% endif %}">
+                        <td>{{ parts[0] }}</td>
+                        <td>{{ parts[1] }}</td>
+                        <td>{{ parts[2] }}</td>
+                        <td>{{ parts[3] }}</td>
+                        <td>{{ parts[4] }}</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
